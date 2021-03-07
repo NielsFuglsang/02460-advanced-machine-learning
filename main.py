@@ -29,7 +29,11 @@ if torch.cuda.is_available():
 print("Running on %s" % device)
 
 dst = datasets.CIFAR100("~/.torch", download=True)
-tp = transforms.ToTensor()
+tp = transforms.Compose([
+    transforms.Resize(32),
+    transforms.CenterCrop(32),
+    transforms.ToTensor()
+])
 tt = transforms.ToPILImage()
 
 img_index = args.index
