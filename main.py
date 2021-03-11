@@ -14,13 +14,24 @@ import torchvision
 from torchvision import models, datasets, transforms
 print(torch.__version__, torchvision.__version__)
 
-from utils import label_to_onehot, cross_entropy_for_onehot
+from utils import (
+    label_to_onehot,
+    cross_entropy_for_onehot,
+    init_data,
+    create_loss_measure
+)
 
 parser = argparse.ArgumentParser(description='Deep Leakage from Gradients.')
 parser.add_argument('--index', type=int, default="25",
                     help='the index for leaking images on CIFAR.')
 parser.add_argument('--image', type=str,default="",
                     help='the path to customized image.')
+parser.add_argument('--inittype', type=str,default="uniform",
+                    help='the data initialization type. (uniform/gaussian).')
+parser.add_argument('--measure', type=str,default="euclidean",
+                    help='the distance measure. (euclidean/gaussian.')
+parser.add_argument('--Q', type=str,default=1,
+                    help='set value of Q in gaussian measure.')
 args = parser.parse_args()
 
 device = "cpu"
@@ -68,12 +79,18 @@ dy_dx = torch.autograd.grad(y, net.parameters())
 original_dy_dx = list((_.detach().clone() for _ in dy_dx))
 
 # generate dummy data and label
-dummy_data = torch.randn(gt_data.size()).to(device).requires_grad_(True)
-dummy_label = torch.randn(gt_onehot_label.size()).to(device).requires_grad_(True)
+dummy_data, dummy_label = init_data(
+    gt_data,
+    gt_onehot_label,
+    device,
+    inittype=args.inittype
+)
+
+loss_measure = create_loss_measure(args, original_dy_dx)
 
 plt.imshow(tt(dummy_data[0].cpu()))
 
-optimizer = torch.optim.LBFGS([dummy_data, dummy_label])
+optimizer = torch.optim.LBFGS([dummy_data, dummy_label], lr=0.1)
 
 
 history = []
@@ -86,9 +103,8 @@ for iters in range(300):
         dummy_loss = criterion(dummy_pred, dummy_onehot_label) 
         dummy_dy_dx = torch.autograd.grad(dummy_loss, net.parameters(), create_graph=True)
         
-        grad_diff = 0
-        for gx, gy in zip(dummy_dy_dx, original_dy_dx): 
-            grad_diff += ((gx - gy) ** 2).sum()
+        grad_diff = loss_measure(original_dy_dx, dummy_dy_dx)
+
         grad_diff.backward()
         
         return grad_diff
@@ -96,7 +112,7 @@ for iters in range(300):
     optimizer.step(closure)
     if iters % 10 == 0: 
         current_loss = closure()
-        print(iters, "%.4f" % current_loss.item())
+        print(iters, "%.10f" % current_loss.item())
         history.append(tt(dummy_data[0].cpu()))
 
 plt.figure(figsize=(12, 8))
