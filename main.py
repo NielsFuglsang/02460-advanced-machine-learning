@@ -5,6 +5,9 @@ from pprint import pprint
 
 from PIL import Image
 import matplotlib.pyplot as plt
+from skimage.metrics import structural_similarity as ssim
+from skimage.metrics import peak_signal_noise_ratio as psnr
+from skimage.metrics import mean_squared_error as mse
 
 import torch
 import torch.nn as nn
@@ -20,6 +23,7 @@ from utils import (
     init_data,
     create_loss_measure
 )
+from models.vision import LeNet, weights_init
 
 parser = argparse.ArgumentParser(description='Deep Leakage from Gradients.')
 parser.add_argument('--index', type=int, default="25",
@@ -60,11 +64,7 @@ gt_label = torch.Tensor([dst[img_index][1]]).long().to(device)
 gt_label = gt_label.view(1, )
 gt_onehot_label = label_to_onehot(gt_label)
 
-plt.imshow(tt(gt_data[0].cpu()))
-
-from models.vision import LeNet, weights_init
 net = LeNet().to(device)
-
 
 torch.manual_seed(1234)
 
@@ -88,12 +88,18 @@ dummy_data, dummy_label = init_data(
 
 loss_measure = create_loss_measure(args, original_dy_dx)
 
-plt.imshow(tt(dummy_data[0].cpu()))
-
 optimizer = torch.optim.LBFGS([dummy_data, dummy_label], lr=0.1)
 
 
 history = []
+losses = {
+    'iter': [],
+    'psnr': [],
+    'ssim': [],
+    'mse': [],
+}
+gt_im = gt_data[0].cpu().numpy().transpose((1,2,0))
+
 for iters in range(300):
     def closure():
         optimizer.zero_grad()
@@ -114,6 +120,22 @@ for iters in range(300):
         current_loss = closure()
         print(iters, "%.10f" % current_loss.item())
         history.append(tt(dummy_data[0].cpu()))
+        
+        dummy_im = dummy_data[0].cpu().detach().numpy().transpose((1,2,0))
+        losses['iter'].append(iters)
+        losses['psnr'].append(psnr(gt_im, dummy_im))
+        losses['mse'].append(mse(gt_im, dummy_im))
+        losses['ssim'].append(ssim(gt_im, dummy_im, multichannel=True))
+
+
+fig, ax = plt.subplots(1, 3, figsize=(12,4))
+ax[0].plot(losses['iter'], losses['mse'])
+ax[0].set_title('MSE')
+ax[1].plot(losses['iter'], losses['psnr'])
+ax[1].set_title('PSNR')
+ax[2].plot(losses['iter'], losses['ssim'])
+ax[2].set_title('SSIM')
+plt.show()
 
 plt.figure(figsize=(12, 8))
 for i in range(30):
