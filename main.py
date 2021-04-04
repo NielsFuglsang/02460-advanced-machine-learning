@@ -26,7 +26,7 @@ from utils import (
     format_label,
     make_reconstruction_plots,
 )
-from models.vision import LeNet, weights_init
+from models.vision import LeNet, ResNet, weights_init, resnet20, _weights_init
 
 parser = argparse.ArgumentParser(description='Deep Leakage from Gradients.')
 parser.add_argument('--index', type=int, default="25", help='the index for leaking images on CIFAR.')
@@ -64,9 +64,14 @@ labels = [format_label(dst, idx, device) for idx in indices]
 gt_data = torch.cat(images, 0)
 gt_onehot_label = torch.cat(labels, 0)
 
+#LeNet
 net = LeNet().to(device)
-
 net.apply(weights_init)
+
+#ResNet20
+#net = resnet20().to(device)
+#net.apply(_weights_init)
+
 criterion = cross_entropy_for_onehot
 
 # compute original gradient
