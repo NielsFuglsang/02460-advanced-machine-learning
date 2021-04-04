@@ -2,6 +2,7 @@
 import argparse
 import numpy as np
 from pprint import pprint
+import random
 
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -16,7 +17,15 @@ from torch.autograd import grad
 import torchvision
 from torchvision import models, datasets, transforms
 
-from utils import (label_to_onehot, cross_entropy_for_onehot, init_data, create_loss_measure)
+from utils import (
+    label_to_onehot,
+    cross_entropy_for_onehot,
+    init_data,
+    create_loss_measure,
+    format_image,
+    format_label,
+    make_reconstruction_plots,
+)
 from models.vision import LeNet, weights_init
 
 parser = argparse.ArgumentParser(description='Deep Leakage from Gradients.')
@@ -24,43 +33,36 @@ parser.add_argument('--index', type=int, default="25", help='the index for leaki
 parser.add_argument('--image', type=str, default="", help='the path to customized image.')
 parser.add_argument('--inittype', type=str, default="uniform", help='the data initialization type. (uniform/gaussian).')
 parser.add_argument('--measure', type=str, default="euclidean", help='the distance measure. (euclidean/gaussian.')
-parser.add_argument('--Q', type=str, default=1, help='set value of Q in gaussian measure.')
+parser.add_argument('--Q', type=int, default=1, help='set value of Q in gaussian measure.')
+parser.add_argument('--batch_size', type=int, default=1, help='Number of images to process in the reconstruction.')
+parser.add_argument('--n_iters', type=int, default=300, help='Number iterations during the reconstruction.')
+parser.add_argument('--val_size', type=int, default=50, help='Denotes the interval size of data collection between iterations.')
 args = parser.parse_args()
 
+random.seed(1337)
 torch.manual_seed(1234)
 device = "cpu"
 if torch.cuda.is_available():
     device = "cuda"
 print("Running on %s" % device)
 
-def format_image(dst, index):
-    """Format CIFAR image to tensor."""
-    tp = transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32), transforms.ToTensor()])
 
-    gt_data = tp(dst[index][0]).to(device)
-    gt_data = gt_data.view(1, *gt_data.size())
-    return gt_data
+batch_size = args.batch_size
+n_iters = args.n_iters
+val_size = args.val_size
 
-def format_label(dst, index):
-    """Format CIFAR label to tensor"""
-    gt_label = torch.Tensor([dst[index][1]]).long().to(device)
-    gt_label = gt_label.view(1, )
-    gt_onehot_label = label_to_onehot(gt_label)
-    return gt_onehot_label
-
-#
 tt = transforms.ToPILImage()
 
 dst = datasets.CIFAR100("~/.torch", download=True)
+
 # Specify indices.
-indices = [25, 26]
+indices = random.choices(list(range(len(dst))), k=batch_size)
 
 # Get ground truth batch of images and labels.
-images = [format_image(dst, idx) for idx in indices]
-labels = [format_label(dst, idx) for idx in indices]
+images = [format_image(dst, idx, device) for idx in indices]
+labels = [format_label(dst, idx, device) for idx in indices]
 gt_data = torch.cat(images, 0)
 gt_onehot_label = torch.cat(labels, 0)
-
 
 net = LeNet().to(device)
 
@@ -77,17 +79,11 @@ original_dy_dx = list((_.detach().clone() for _ in dy_dx))
 # generate dummy data and label
 dummy_data, dummy_label = init_data(gt_data, gt_onehot_label, device, inittype=args.inittype)
 
-
 loss_measure = create_loss_measure(args, original_dy_dx)
 optimizer = torch.optim.LBFGS([dummy_data, dummy_label], lr=0.1)
 
 history = []
-
-# gt_im = gt_data[0].cpu().numpy().transpose((1, 2, 0))
-
-n = 50
-val_size = 5
-for iters in range(n):
+for iters in range(n_iters):
 
     def closure():
         optimizer.zero_grad()
@@ -110,17 +106,15 @@ for iters in range(n):
         current_loss = closure()
         print(iters, "%.10f" % current_loss.item())
 
-        history.append([tt(dummy_data[0].cpu()), tt(dummy_data[1].cpu())])
+        history.append([tt(dummy_data[i].cpu()) for i in range(batch_size)])
 
-        dummy_im = dummy_data[0].cpu().detach().numpy().transpose((1, 2, 0))
 
-fig, axes = plt.subplots(2, 10, figsize=(10, 2))
-for i in range(10):
-    axes[0][i].imshow(history[i][0])
-    axes[1][i].imshow(history[i][1])
-    axes[0][i].set_title(f"it={i * val_size}")
-    axes[1][i].set_title(f"it={i * val_size}")
-    axes[0][i].axis('off')
-    axes[1][i].axis('off')
-plt.show()
+make_reconstruction_plots(
+    history,
+    batch_size,
+    val_size,
+    indices,
+    dst, 
+    figsize=(12, 8)
+)
 

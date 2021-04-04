@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 import itertools
 import matplotlib.pyplot as plt
+from torchvision import transforms
 
 
 def label_to_onehot(target, num_classes=100):
@@ -58,3 +59,42 @@ def init_data(gt_data, gt_onehot_label, device, inittype="uniform"):
     else:
         raise ValueError("Only keywords 'uniform' and 'gaussian' are accepted for 'inittype'.")
     return dummy_data, dummy_label
+
+def format_image(dst, index, device):
+    """Format CIFAR image to tensor."""
+    tp = transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32), transforms.ToTensor()])
+
+    gt_data = tp(dst[index][0]).to(device)
+    gt_data = gt_data.view(1, *gt_data.size())
+    return gt_data
+
+def format_label(dst, index, device):
+    """Format CIFAR label to tensor"""
+    gt_label = torch.Tensor([dst[index][1]]).long().to(device)
+    gt_label = gt_label.view(1, )
+    gt_onehot_label = label_to_onehot(gt_label)
+    return gt_onehot_label
+
+def make_reconstruction_plots(
+        history,
+        batch_size,
+        val_size,
+        indices,
+        dst,
+        figsize=(12, 8)
+    ):
+    fig, axes = plt.subplots(len(history) + 1, batch_size, figsize=figsize)
+
+    for i in range(len(history)):
+        for j in range(batch_size):
+            axes[i][j].imshow(history[i][j])
+            axes[i][j].set_title(f"it={i * val_size}")
+            axes[i][j].axis('off')
+
+    for j in range(batch_size):
+        axes[i+1][j].imshow((dst[indices[j]][0]))
+        axes[i+1][j].set_title(f"Ground truth. Image {indices[j]}")
+        axes[i+1][j].axis('off')
+
+    fig.tight_layout()
+    plt.show()
