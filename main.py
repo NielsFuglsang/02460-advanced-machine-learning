@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+from models.vision import LeNet, weights_init
+from utils import (
+    label_to_onehot,
+    cross_entropy_for_onehot,
+    init_data,
+    create_loss_measure,
+)
 import argparse
 import numpy as np
 from pprint import pprint
@@ -18,15 +25,20 @@ from torchvision import models, datasets, transforms
 
 print(torch.__version__, torchvision.__version__)
 
-from utils import (label_to_onehot, cross_entropy_for_onehot, init_data, create_loss_measure)
-from models.vision import LeNet, weights_init
 
 parser = argparse.ArgumentParser(description='Deep Leakage from Gradients.')
-parser.add_argument('--index', type=int, default="25", help='the index for leaking images on CIFAR.')
-parser.add_argument('--image', type=str, default="", help='the path to customized image.')
-parser.add_argument('--inittype', type=str, default="uniform", help='the data initialization type. (uniform/gaussian/gaussian_shift).')
-parser.add_argument('--measure', type=str, default="euclidean", help='the distance measure. (euclidean/gaussian.')
-parser.add_argument('--Q', type=str, default=1, help='set value of Q in gaussian measure.')
+parser.add_argument('--data', type=str, default="CIFAR",
+                    help='dataset to choose from in torchvision.datasets (CIFAR, MNIST etc.).')
+parser.add_argument('--index', type=int, default="25",
+                    help='the index for leaking images on dataset.')
+parser.add_argument('--image', type=str, default="",
+                    help='the path to customized image.')
+parser.add_argument('--inittype', type=str, default="uniform",
+                    help='the data initialization type. (uniform/gaussian/gaussian_shift).')
+parser.add_argument('--measure', type=str, default="euclidean",
+                    help='the distance measure. (euclidean/gaussian.')
+parser.add_argument('--Q', type=str, default=1,
+                    help='set value of Q in gaussian measure.')
 args = parser.parse_args()
 
 device = "cpu"
@@ -34,12 +46,23 @@ if torch.cuda.is_available():
     device = "cuda"
 print("Running on %s" % device)
 
-dst = datasets.CIFAR100("~/.torch", download=True)
-tp = transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32), transforms.ToTensor()])
+dsts = {
+    "CIFAR": datasets.CIFAR100,
+    "MNIST": datasets.QMNIST, 
+    "Omniglot": datasets.Omniglot
+}
+dst = dsts[args.data]("~/.torch", download=True)
+
+tp = transforms.Compose(
+    [transforms.Resize(32), transforms.CenterCrop(32), transforms.ToTensor()])
 tt = transforms.ToPILImage()
 
 img_index = args.index
 gt_data = tp(dst[img_index][0]).to(device)
+
+# Convert grayscale to rgb.
+if gt_data.shape[0] == 1:
+    gt_data = gt_data.repeat(3, 1, 1)
 
 if len(args.image) > 1:
     gt_data = Image.open(args.image)
