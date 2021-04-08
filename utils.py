@@ -55,6 +55,9 @@ def init_data(gt_data, gt_onehot_label, device, inittype="uniform"):
     elif inittype == "gaussian":
         dummy_data = torch.randn(gt_data.size()).to(device).requires_grad_(True)
         dummy_label = torch.randn(gt_onehot_label.size()).to(device).requires_grad_(True)
+    elif inittype == "gaussian_shift":
+        dummy_data = torch.normal(mean=0.5, std=0.5, size=gt_data.size()).to(device).requires_grad_(True)
+        dummy_label = torch.normal(mean=0.5, std=0.5, size=gt_onehot_label.size()).to(device).requires_grad_(True)
     else:
         raise ValueError("Only keywords 'uniform' and 'gaussian' are accepted for 'inittype'.")
     return dummy_data, dummy_label

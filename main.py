@@ -24,7 +24,7 @@ from models.vision import LeNet, weights_init
 parser = argparse.ArgumentParser(description='Deep Leakage from Gradients.')
 parser.add_argument('--index', type=int, default="25", help='the index for leaking images on CIFAR.')
 parser.add_argument('--image', type=str, default="", help='the path to customized image.')
-parser.add_argument('--inittype', type=str, default="uniform", help='the data initialization type. (uniform/gaussian).')
+parser.add_argument('--inittype', type=str, default="uniform", help='the data initialization type. (uniform/gaussian/gaussian_shift).')
 parser.add_argument('--measure', type=str, default="euclidean", help='the distance measure. (euclidean/gaussian.')
 parser.add_argument('--Q', type=str, default=1, help='set value of Q in gaussian measure.')
 args = parser.parse_args()
