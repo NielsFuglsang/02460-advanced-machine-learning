@@ -57,7 +57,7 @@ dst = datasets.CIFAR100("~/.torch", download=True)
 
 # Specify indices.
 indices = random.choices(list(range(len(dst))), k=batch_size)
-
+indices = [30]
 # Get ground truth batch of images and labels.
 images = [format_image(dst, idx, device) for idx in indices]
 labels = [format_label(dst, idx, device) for idx in indices]
@@ -80,7 +80,7 @@ original_dy_dx = list((_.detach().clone() for _ in dy_dx))
 dummy_data, dummy_label = init_data(gt_data, gt_onehot_label, device, inittype=args.inittype)
 
 loss_measure = create_loss_measure(args, original_dy_dx)
-optimizer = torch.optim.LBFGS([dummy_data, dummy_label], lr=0.1)
+optimizer = torch.optim.LBFGS([dummy_data, dummy_label], lr=1, tolerance_grad=0, tolerance_change=0)
 
 history = []
 for iters in range(n_iters):
@@ -104,7 +104,7 @@ for iters in range(n_iters):
     # Validation.
     if iters % val_size == 0:
         current_loss = closure()
-        print(iters, "%.10f" % current_loss.item())
+        print(iters, "%.20f" % current_loss.item())
 
         history.append([tt(dummy_data[i].cpu()) for i in range(batch_size)])
 
