@@ -1,11 +1,4 @@
 # -*- coding: utf-8 -*-
-from models.vision import LeNet, weights_init
-from utils import (
-    label_to_onehot,
-    cross_entropy_for_onehot,
-    init_data,
-    create_loss_measure,
-)
 import argparse
 import numpy as np
 from pprint import pprint
@@ -22,6 +15,14 @@ import torch.nn.functional as F
 from torch.autograd import grad
 import torchvision
 from torchvision import models, datasets, transforms
+
+from models.vision import LeNet, weights_init
+from utils import (
+    label_to_onehot,
+    cross_entropy_for_onehot,
+    init_data,
+    create_loss_measure,
+)
 
 print(torch.__version__, torchvision.__version__)
 
@@ -49,12 +50,12 @@ print("Running on %s" % device)
 dsts = {
     "CIFAR": datasets.CIFAR100,
     "MNIST": datasets.QMNIST, 
-    "Omniglot": datasets.Omniglot
+    "Omniglot": datasets.Omniglot,
+    "SVHN": datasets.SVHN,
 }
 dst = dsts[args.data]("~/.torch", download=True)
 
-tp = transforms.Compose(
-    [transforms.Resize(32), transforms.CenterCrop(32), transforms.ToTensor()])
+tp = transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32), transforms.ToTensor()])
 tt = transforms.ToPILImage()
 
 img_index = args.index
