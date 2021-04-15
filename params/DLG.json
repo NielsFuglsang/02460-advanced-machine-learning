@@ -1,0 +1,9 @@
+{
+    "num_epochs": 100,
+    "data": "CIFAR",
+    "index": 25,
+    "init_type": "gaussian_shift",
+    "measure": "euclidean",
+    "Q": 1,
+    "batch_size": 1
+}
