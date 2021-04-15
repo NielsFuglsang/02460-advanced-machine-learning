@@ -221,15 +221,21 @@ class Experiment:
         plt.show()
 
 def format_image(dst, index, device):
-    """Format CIFAR image to tensor."""
+    """Format image to tensor."""
     tp = transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32), transforms.ToTensor()])
 
     gt_data = tp(dst[index][0]).to(device)
+
+    # Convert grayscale to rgb (for MNIST).
+    if gt_data.shape[0] == 1:
+        gt_data = gt_data.repeat(3, 1, 1)
+
     gt_data = gt_data.view(1, *gt_data.size())
+
     return gt_data
 
 def format_label(dst, index, device):
-    """Format CIFAR label to tensor"""
+    """Format label to tensor"""
     gt_label = torch.Tensor([dst[index][1]]).long().to(device)
     gt_label = gt_label.view(1, )
     gt_onehot_label = label_to_onehot(gt_label)
