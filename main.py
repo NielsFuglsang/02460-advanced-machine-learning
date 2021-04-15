@@ -26,7 +26,7 @@ from utils import (
     format_label,
     make_reconstruction_plots,
 )
-from models.vision import LeNet, weights_init
+from models.vision import LeNet, weights_init, ResNet18
 
 parser = argparse.ArgumentParser(description='Deep Leakage from Gradients.')
 parser.add_argument('--index', type=int, default="25", help='the index for leaking images on CIFAR.')
@@ -57,7 +57,7 @@ dst = datasets.CIFAR100("~/.torch", download=True)
 
 # Specify indices.
 indices = random.choices(list(range(len(dst))), k=batch_size)
-indices = [30]
+indices = [30, 31]
 # Get ground truth batch of images and labels.
 images = [format_image(dst, idx, device) for idx in indices]
 labels = [format_label(dst, idx, device) for idx in indices]
@@ -65,6 +65,8 @@ gt_data = torch.cat(images, 0)
 gt_onehot_label = torch.cat(labels, 0)
 
 net = LeNet().to(device)
+# import torchvision.models as models
+# net = models.resnet18(num_classes=100).to(device)
 
 net.apply(weights_init)
 criterion = cross_entropy_for_onehot
@@ -77,10 +79,15 @@ dy_dx = torch.autograd.grad(y, net.parameters())
 original_dy_dx = list((_.detach().clone() for _ in dy_dx))
 
 # generate dummy data and label
-dummy_data, dummy_label = init_data(gt_data, gt_onehot_label, device, inittype=args.inittype)
+dummy_datas = []
+dummy_labels = []
+for i in range(batch_size):
+    dd, dl = init_data(gt_data[None, i, :], gt_onehot_label[None, i], device, inittype=args.inittype)
+    dummy_datas.append(dd)
+    dummy_labels.append(dl)
 
 loss_measure = create_loss_measure(args, original_dy_dx)
-optimizer = torch.optim.LBFGS([dummy_data, dummy_label], lr=1, tolerance_grad=0, tolerance_change=0)
+optimizer = torch.optim.LBFGS(dummy_datas+dummy_labels, lr=1, tolerance_grad=0, tolerance_change=0)
 
 history = []
 for iters in range(n_iters):
@@ -88,12 +95,18 @@ for iters in range(n_iters):
     def closure():
         optimizer.zero_grad()
 
-        dummy_pred = net(dummy_data)
-        dummy_onehot_label = F.softmax(dummy_label, dim=-1)
-        dummy_loss = criterion(dummy_pred, dummy_onehot_label)
+        dummy_loss = 0
+        for dd, dl in zip(dummy_datas, dummy_labels):
+            dummy_pred = net(dd)
+            dummy_onehot_label = F.softmax(dl, dim=-1)
+            dummy_loss += criterion(dummy_pred, dummy_onehot_label)
+        dummy_loss /= batch_size
+
         dummy_dy_dx = torch.autograd.grad(dummy_loss, net.parameters(), create_graph=True)
 
-        grad_diff = loss_measure(original_dy_dx, dummy_dy_dx)
+        grad_diff = 0
+        for gx, gy in zip(dummy_dy_dx, original_dy_dx): 
+            grad_diff += ((gx - gy) ** 2).sum()
 
         grad_diff.backward()
 
@@ -101,12 +114,12 @@ for iters in range(n_iters):
 
     optimizer.step(closure)
 
+    print(iters, closure().item())
     # Validation.
     if iters % val_size == 0:
         current_loss = closure()
-        print(iters, "%.20f" % current_loss.item())
 
-        history.append([tt(dummy_data[i].cpu()) for i in range(batch_size)])
+        history.append([tt(d[0].cpu()) for d in dummy_datas])
 
 
 make_reconstruction_plots(

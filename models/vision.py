@@ -9,8 +9,8 @@ from torchvision import models, datasets, transforms
 def weights_init(m):
     if hasattr(m, "weight"):
         m.weight.data.uniform_(-0.5, 0.5)
-    if hasattr(m, "bias"):
-        m.bias.data.uniform_(-0.5, 0.5)
+    # if hasattr(m, "bias"):
+    #     m.bias.data.uniform_(-0.5, 0.5)
 
 
 class LeNet(nn.Module):
@@ -48,8 +48,8 @@ Reference:
 def weights_init(m):
     if hasattr(m, "weight"):
         m.weight.data.uniform_(-0.5, 0.5)
-    if hasattr(m, "bias"):
-        m.bias.data.uniform_(-0.5, 0.5)
+    # if hasattr(m, "bias"):
+    #     m.bias.data.uniform_(-0.5, 0.5)
 
 
 class BasicBlock(nn.Module):
@@ -69,10 +69,10 @@ class BasicBlock(nn.Module):
                 nn.BatchNorm2d(self.expansion * planes))
 
     def forward(self, x):
-        out = F.Sigmoid(self.bn1(self.conv1(x)))
+        out = F.sigmoid(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
         out += self.shortcut(x)
-        out = F.Sigmoid(out)
+        out = F.sigmoid(out)
         return out
 
 
@@ -95,16 +95,16 @@ class Bottleneck(nn.Module):
                 nn.BatchNorm2d(self.expansion * planes))
 
     def forward(self, x):
-        out = F.Sigmoid(self.bn1(self.conv1(x)))
-        out = F.Sigmoid(self.bn2(self.conv2(out)))
+        out = F.sigmoid(self.bn1(self.conv1(x)))
+        out = F.sigmoid(self.bn2(self.conv2(out)))
         out = self.bn3(self.conv3(out))
         out += self.shortcut(x)
-        out = F.Sigmoid(out)
+        out = F.sigmoid(out)
         return out
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks, num_classes=100):
         super(ResNet, self).__init__()
         self.in_planes = 64
 
@@ -125,13 +125,21 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        out = F.Sigmoid(self.bn1(self.conv1(x)))
+        print(x.shape)
+        out = F.sigmoid(self.bn1(self.conv1(x)))
+        print(out.shape)
         out = self.layer1(out)
+        print(out.shape)
         out = self.layer2(out)
+        print(out.shape)
         out = self.layer3(out)
+        print(out.shape)
         out = self.layer4(out)
+        print(out.shape)
         out = F.avg_pool2d(out, 4)
+        print(out.shape)
         out = out.view(out.size(0), -1)
+        print(out.shape)
         out = self.linear(out)
         return out
 

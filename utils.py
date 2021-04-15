@@ -54,8 +54,8 @@ def init_data(gt_data, gt_onehot_label, device, inittype="uniform"):
         dummy_data = torch.rand(gt_data.size()).to(device).requires_grad_(True)
         dummy_label = torch.rand(gt_onehot_label.size()).to(device).requires_grad_(True)
     elif inittype == "gaussian":
-        dummy_data = torch.randn(gt_data.size()).to(device).requires_grad_(True)
-        dummy_label = torch.randn(gt_onehot_label.size()).to(device).requires_grad_(True)
+        dummy_data = torch.randn(gt_data.size()).to(device).requires_grad_(True)*0.1 + 0.5
+        dummy_label = torch.randn(gt_onehot_label.size()).to(device).requires_grad_(True)*0.1 + 0.5
     else:
         raise ValueError("Only keywords 'uniform' and 'gaussian' are accepted for 'inittype'.")
     return dummy_data, dummy_label
@@ -83,18 +83,29 @@ def make_reconstruction_plots(
         dst,
         figsize=(12, 8)
     ):
-    fig, axes = plt.subplots(len(history) + 1, batch_size, figsize=figsize)
+    if batch_size > 1:
+        fig, axes = plt.subplots(len(history) + 1, batch_size, figsize=figsize)
+        for i in range(len(history)):
+            for j in range(batch_size):
+                axes[i][j].imshow(history[i][j])
+                axes[i][j].set_title(f"it={i * val_size}")
+                axes[i][j].axis('off')
 
-    for i in range(len(history)):
         for j in range(batch_size):
-            axes[i][j].imshow(history[i][j])
-            axes[i][j].set_title(f"it={i * val_size}")
-            axes[i][j].axis('off')
+            axes[i+1][j].imshow((dst[indices[j]][0]))
+            axes[i+1][j].set_title(f"Ground truth. Image {indices[j]}")
+            axes[i+1][j].axis('off')
+    else:
+        fig, axes = plt.subplots(len(history) + 1, 1, figsize=figsize)
 
-    for j in range(batch_size):
-        axes[i+1][j].imshow((dst[indices[j]][0]))
-        axes[i+1][j].set_title(f"Ground truth. Image {indices[j]}")
-        axes[i+1][j].axis('off')
+        for i in range(len(history)):
+            axes[i].imshow(history[i][0])
+            axes[i].set_title(f"it={i * val_size}")
+            axes[i].axis('off')
+
+        axes[-1].imshow((dst[indices[0]][0]))
+        axes[-1].set_title(f"Ground truth. Image {indices[0]}")
+        axes[-1].axis('off')
 
     fig.tight_layout()
     plt.show()
