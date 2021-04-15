@@ -57,7 +57,7 @@ dst = datasets.CIFAR100("~/.torch", download=True)
 
 # Specify indices.
 indices = random.choices(list(range(len(dst))), k=batch_size)
-indices = [30, 31]
+indices = [100,101,102]
 # Get ground truth batch of images and labels.
 images = [format_image(dst, idx, device) for idx in indices]
 labels = [format_label(dst, idx, device) for idx in indices]
@@ -90,12 +90,13 @@ loss_measure = create_loss_measure(args, original_dy_dx)
 optimizer = torch.optim.LBFGS(dummy_datas+dummy_labels, lr=1, tolerance_grad=0, tolerance_change=0)
 
 history = []
+m = 10
 for iters in range(n_iters):
 
     def closure():
         optimizer.zero_grad()
 
-        dummy_loss = 0
+        dummy_loss = torch.empty(1,1)
         for dd, dl in zip(dummy_datas, dummy_labels):
             dummy_pred = net(dd)
             dummy_onehot_label = F.softmax(dl, dim=-1)
@@ -104,9 +105,18 @@ for iters in range(n_iters):
 
         dummy_dy_dx = torch.autograd.grad(dummy_loss, net.parameters(), create_graph=True)
 
-        grad_diff = 0
+        grad_diff = torch.empty(1,1)
         for gx, gy in zip(dummy_dy_dx, original_dy_dx): 
             grad_diff += ((gx - gy) ** 2).sum()
+
+       # Add regularization
+        l = torch.empty(1,1, requires_grad=False)
+        for j in range(batch_size):
+            for i in range(j+1, batch_size):
+                l+=torch.matmul(dummy_datas[j].reshape(1,-1), dummy_datas[i].reshape(-1,1))**2
+        lamda = 0.001
+
+        grad_diff += l*(lamda*(0.9**((iters+1)//m)))
 
         grad_diff.backward()
 
