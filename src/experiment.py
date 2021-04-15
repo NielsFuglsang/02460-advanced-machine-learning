@@ -15,10 +15,12 @@ from .utils import label_to_onehot, cross_entropy_for_onehot, euclidean_measure,
 
 
 class Experiment:
-
-    def __init__(self, params):
-
+    """Class for running experiments of DLG algorithm given a set parameters (dictionary)."""
+    def __init__(self, params, rand_ims=False, verbose=True):
+        torch.manual_seed(1234)
         # Identify device for computations.
+        self.verbose = verbose
+
         self.device = "cpu"
         if torch.cuda.is_available():
             self.device = "cuda"
@@ -50,8 +52,12 @@ class Experiment:
         self.dst = self.load_dataset()
 
         # Specify indices.
-        self.indices = random.choices(list(range(len(self.dst))), k=self.batch_size)
-
+        self.random = rand_ims
+        if self.random:
+            self.indices = random.choices(list(range(len(self.dst))), k=self.batch_size)
+        else:
+            self.indices = np.arange(params["index"], params["index"] + self.batch_size)
+        
         # Load ground truth data and find gradients.
         self.gt_data, self.gt_label, self.gt_onehot_label = self.load_ground_truths()
         self.original_dy_dx = self.compute_original_grad()
@@ -63,15 +69,21 @@ class Experiment:
         self.iters = np.arange(0, self.num_epochs, self.val_size)
         self.losses = {'psnr': [], 'ssim': [], 'mse': []}
         self.history = []
+        self.used_indices = []
 
     def reset(self):
         """Reset network weights and ground truth data."""
 
         # Reset weights.
         self.net.apply(weights_init)
+        
         # Specify indices.
-        self.indices = random.choices(list(range(len(self.dst))), k=self.batch_size)
-
+        if self.random:
+            self.indices = random.choices(list(range(len(self.dst))), k=self.batch_size)
+        else:
+            # Add to previous indeces, to keep same indeces when comparing methods.
+            self.indices += self.batch_size
+        
         # Load ground truth data and find gradients.
         self.gt_data, self.gt_label, self.gt_onehot_label = self.load_ground_truths()
         self.original_dy_dx = self.compute_original_grad()
@@ -81,7 +93,8 @@ class Experiment:
 
     def run_multiple(self):
         """Run training on multiple images to get an estimate of performance."""
-        for _ in range(self.n_repeats):
+        self.train()
+        for _ in range(self.n_repeats - 1):
             # Reset and run training again.
             self.reset()
             self.train()
@@ -114,7 +127,8 @@ class Experiment:
             optimizer.step(closure)
             if iters % self.val_size == 0:
                 current_loss = closure()
-                print(iters, "%.10f" % current_loss.item())
+                if self.verbose:
+                    print(iters, "%.10f" % current_loss.item())
                 train_history.append([self.tt(dummy_data[i].cpu()) for i in range(self.batch_size)])
 
                 dummy_im = dummy_data[0].cpu().detach().numpy().transpose((1, 2, 0))
@@ -127,7 +141,7 @@ class Experiment:
         self.losses['psnr'].append(train_loss['psnr'])
         self.losses['mse'].append(train_loss['mse'])
         self.losses['ssim'].append(train_loss['ssim'])
-        
+        self.used_indices.append(self.indices.copy())
 
     def compute_original_grad(self):
         """Compute original gradients for ground truth data."""
@@ -205,16 +219,16 @@ class Experiment:
                     axes[i][j].axis('off')
 
             for i in range(self.batch_size):
-                axes[i][j+1].imshow((self.dst[self.indices[i]][0]))
-                axes[i][j+1].set_title(f"Ground truth. Image {self.indices[i]}")
+                axes[i][j+1].imshow((self.dst[self.used_indices[train_id][i]][0]))
+                axes[i][j+1].set_title(f"Ground truth. Image {self.used_indices[train_id][i]}")
                 axes[i][j+1].axis('off')
         else:
             for i in range(len(ims)):
                 axes[i].imshow(ims[i][0])
                 axes[i].set_title(f"it={i * self.val_size}")
                 axes[i].axis('off')
-            axes[i+1].imshow((self.dst[self.indices[0]][0]))
-            axes[i+1].set_title(f"Ground truth. Image {self.indices[0]}")
+            axes[i+1].imshow((self.dst[self.used_indices[train_id][0]][0]))
+            axes[i+1].set_title(f"Ground truth. Image {self.used_indices[train_id][0]}")
             axes[i+1].axis('off')
 
         fig.tight_layout()

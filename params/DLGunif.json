@@ -1,0 +1,12 @@
+{
+    "num_epochs": 200,
+    "data": "CIFAR",
+    "index": 1,
+    "batch_size": 1,
+    "n_repeats": 5,
+    "init_type": "uniform",
+    "measure": "euclidean",
+    "Q": 1,
+    "val_size": 50,
+    "lr": 0.2
+}
