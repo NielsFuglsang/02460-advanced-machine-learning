@@ -33,7 +33,7 @@ class Experiment:
         self.init_type = params["init_type"]
         self.Q = params["Q"]
         self.val_size = params["val_size"]
-        self.n_images = params["n_images"]
+        self.n_repeats = params["n_repeats"]
 
         # Initialize network.
         self.net = LeNet().to(self.device)
@@ -64,6 +64,28 @@ class Experiment:
         self.losses = {'psnr': [], 'ssim': [], 'mse': []}
         self.history = []
 
+    def reset(self):
+        """Reset network weights and ground truth data."""
+
+        # Reset weights.
+        self.net.apply(weights_init)
+        # Specify indices.
+        self.indices = random.choices(list(range(len(self.dst))), k=self.batch_size)
+
+        # Load ground truth data and find gradients.
+        self.gt_data, self.gt_label, self.gt_onehot_label = self.load_ground_truths()
+        self.original_dy_dx = self.compute_original_grad()
+        
+        # Create loss measure (euclidean or gaussian).
+        self.loss_measure = self.create_loss_measure()
+
+    def run_multiple(self):
+        """Run training on multiple images to get an estimate of performance."""
+        for _ in range(self.n_repeats):
+            # Reset and run training again.
+            self.reset()
+            self.train()
+
     def train(self):
         """Train our network based on the DLG algorithm."""
 
@@ -72,6 +94,7 @@ class Experiment:
 
         gt_im = self.gt_data[0].cpu().numpy().transpose((1, 2, 0))
         
+        train_history = []
         train_loss = {'psnr': [], 'ssim': [], 'mse': []}
         for iters in range(self.num_epochs):
             def closure():
@@ -92,13 +115,15 @@ class Experiment:
             if iters % self.val_size == 0:
                 current_loss = closure()
                 print(iters, "%.10f" % current_loss.item())
-                self.history.append([self.tt(dummy_data[i].cpu()) for i in range(self.batch_size)])
+                train_history.append([self.tt(dummy_data[i].cpu()) for i in range(self.batch_size)])
 
                 dummy_im = dummy_data[0].cpu().detach().numpy().transpose((1, 2, 0))
                 train_loss['psnr'].append(psnr(gt_im, dummy_im))
                 train_loss['mse'].append(mse(gt_im, dummy_im))
                 train_loss['ssim'].append(ssim(gt_im, dummy_im, multichannel=True))
         
+        # Append training to global variables.
+        self.history.append(train_history)
         self.losses['psnr'].append(train_loss['psnr'])
         self.losses['mse'].append(train_loss['mse'])
         self.losses['ssim'].append(train_loss['ssim'])
@@ -167,13 +192,15 @@ class Experiment:
                 "Only keywords 'uniform', 'gaussian' and 'gaussian_shift are accepted for 'init_type'.")
         return dummy_data, dummy_label
 
-    def make_reconstruction_plots(self, figsize=(12, 8)):
-        fig, axes = plt.subplots(self.batch_size, len(self.history) + 1, figsize=figsize)
+    def make_reconstruction_plots(self, train_id=0, figsize=(12, 8)):
+        ims = self.history[train_id]
+
+        fig, axes = plt.subplots(self.batch_size, len(ims) + 1, figsize=figsize)
 
         if self.batch_size > 1:
             for i in range(self.batch_size):
-                for j in range(len(self.history)):
-                    axes[i][j].imshow(self.history[j][i])
+                for j in range(len(ims)):
+                    axes[i][j].imshow(ims[j][i])
                     axes[i][j].set_title(f"it={j * self.val_size}")
                     axes[i][j].axis('off')
 
@@ -182,8 +209,8 @@ class Experiment:
                 axes[i][j+1].set_title(f"Ground truth. Image {self.indices[i]}")
                 axes[i][j+1].axis('off')
         else:
-            for i in range(len(self.history)):
-                axes[i].imshow(self.history[i][0])
+            for i in range(len(ims)):
+                axes[i].imshow(ims[i][0])
                 axes[i].set_title(f"it={i * self.val_size}")
                 axes[i].axis('off')
             axes[i+1].imshow((self.dst[self.indices[0]][0]))
