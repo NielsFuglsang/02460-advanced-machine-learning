@@ -13,6 +13,8 @@ if len(sys.argv) != 2:
 name = sys.argv[1]
 params = read_json('params/'+name+'.json')
 
+torch.manual_seed(1234)
+# Run experiment.
 exp = Experiment(params)
-losses = exp.train()
-print(losses)
+exp.train()
+print(exp.losses)
