@@ -155,8 +155,8 @@ class Experiment:
         """Load ground truths from dataset."""
                
         # Get ground truth batch of images and labels.
-        images = [format_image(self.dst, idx, self.device) for idx in self.indices]
-        gt_label = [format_label(self.dst, idx, self.device) for idx in self.indices]
+        images = [self.format_image(idx) for idx in self.indices]
+        gt_label = [self.format_label(idx) for idx in self.indices]
         gt_data = torch.cat(images, 0)
         gt_onehot_label = torch.cat(gt_label, 0)
         
@@ -234,23 +234,22 @@ class Experiment:
         fig.tight_layout()
         plt.show()
 
-def format_image(dst, index, device):
-    """Format image to tensor."""
-    tp = transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32), transforms.ToTensor()])
+    def format_image(self, index):
+        """Format image to tensor."""
+        gt_data = self.tp(self.dst[index][0]).to(self.device)
 
-    gt_data = tp(dst[index][0]).to(device)
+        # Convert grayscale to rgb (for MNIST).
+        if gt_data.shape[0] == 1:
+            gt_data = gt_data.repeat(3, 1, 1)
 
-    # Convert grayscale to rgb (for MNIST).
-    if gt_data.shape[0] == 1:
-        gt_data = gt_data.repeat(3, 1, 1)
+        gt_data = gt_data.view(1, *gt_data.size())
 
-    gt_data = gt_data.view(1, *gt_data.size())
+        return gt_data
 
-    return gt_data
+    def format_label(self, index):
+        """Format label to tensor"""
+        gt_label = torch.Tensor([self.dst[index][1]]).long().to(self.device)
+        gt_label = gt_label.view(1, )
+        gt_onehot_label = label_to_onehot(gt_label)
 
-def format_label(dst, index, device):
-    """Format label to tensor"""
-    gt_label = torch.Tensor([dst[index][1]]).long().to(device)
-    gt_label = gt_label.view(1, )
-    gt_onehot_label = label_to_onehot(gt_label)
-    return gt_onehot_label
+        return gt_onehot_label
