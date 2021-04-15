@@ -11,11 +11,12 @@ import torch.nn.functional as F
 from torchvision import models, datasets, transforms
 
 from .models import LeNet, weights_init
-from .utils import label_to_onehot, cross_entropy_for_onehot, euclidean_measure, gaussian_measure, init_data
+from .utils import label_to_onehot, cross_entropy_for_onehot, euclidean_measure, gaussian_measure
 
 
 class Experiment:
     """Class for running experiments of DLG algorithm given a set parameters (dictionary)."""
+
     def __init__(self, params, rand_ims=False, verbose=True):
         torch.manual_seed(1234)
         # Identify device for computations.
@@ -57,7 +58,7 @@ class Experiment:
             self.indices = random.choices(list(range(len(self.dst))), k=self.batch_size)
         else:
             self.indices = np.arange(params["index"], params["index"] + self.batch_size)
-        
+
         # Load ground truth data and find gradients.
         self.gt_data, self.gt_label, self.gt_onehot_label = self.load_ground_truths()
         self.original_dy_dx = self.compute_original_grad()
@@ -76,18 +77,18 @@ class Experiment:
 
         # Reset weights.
         self.net.apply(weights_init)
-        
+
         # Specify indices.
         if self.random:
             self.indices = random.choices(list(range(len(self.dst))), k=self.batch_size)
         else:
             # Add to previous indeces, to keep same indeces when comparing methods.
             self.indices += self.batch_size
-        
+
         # Load ground truth data and find gradients.
         self.gt_data, self.gt_label, self.gt_onehot_label = self.load_ground_truths()
         self.original_dy_dx = self.compute_original_grad()
-        
+
         # Create loss measure (euclidean or gaussian).
         self.loss_measure = self.create_loss_measure()
 
@@ -106,7 +107,7 @@ class Experiment:
         optimizer = torch.optim.LBFGS([dummy_data, dummy_label], lr=self.lr)
 
         gt_im = self.gt_data[0].cpu().numpy().transpose((1, 2, 0))
-        
+
         train_history = []
         train_loss = {'psnr': [], 'ssim': [], 'mse': []}
         for iters in range(self.num_epochs):
@@ -135,7 +136,7 @@ class Experiment:
                 train_loss['psnr'].append(psnr(gt_im, dummy_im))
                 train_loss['mse'].append(mse(gt_im, dummy_im))
                 train_loss['ssim'].append(ssim(gt_im, dummy_im, multichannel=True))
-        
+
         # Append training to global variables.
         self.history.append(train_history)
         self.losses['psnr'].append(train_loss['psnr'])
@@ -153,13 +154,13 @@ class Experiment:
 
     def load_ground_truths(self):
         """Load ground truths from dataset."""
-               
+
         # Get ground truth batch of images and labels.
         images = [self.format_image(idx) for idx in self.indices]
         gt_label = [self.format_label(idx) for idx in self.indices]
         gt_data = torch.cat(images, 0)
         gt_onehot_label = torch.cat(gt_label, 0)
-        
+
         return gt_data, gt_label, gt_onehot_label
 
     def load_dataset(self):
@@ -185,7 +186,7 @@ class Experiment:
                 "Only keywords 'euclidean' and 'gaussian' are accepted for 'measure'.")
 
     def init_data(self):
-        """Initialize dummy data and label."""
+        """Initialize dummy data and label based on parameters."""
         if self.init_type == "uniform":
             dummy_data = torch.rand(self.gt_data.size()).to(
                 self.device).requires_grad_(True)
@@ -207,9 +208,11 @@ class Experiment:
         return dummy_data, dummy_label
 
     def make_reconstruction_plots(self, train_id=0, figsize=(12, 8)):
+        """Make reconstruction plots from what was stored in history."""
         ims = self.history[train_id]
 
-        fig, axes = plt.subplots(self.batch_size, len(ims) + 1, figsize=figsize)
+        fig, axes = plt.subplots(
+            self.batch_size, len(ims) + 1, figsize=figsize)
 
         if self.batch_size > 1:
             for i in range(self.batch_size):
@@ -219,8 +222,8 @@ class Experiment:
                     axes[i][j].axis('off')
 
             for i in range(self.batch_size):
-                axes[i][j+1].imshow((self.dst[self.used_indices[train_id][i]][0]))
-                axes[i][j+1].set_title(f"Ground truth. Image {self.used_indices[train_id][i]}")
+                axes[i][j + 1].imshow((self.dst[self.used_indices[train_id][i]][0]))
+                axes[i][j + 1].set_title(f"Ground truth. Image {self.used_indices[train_id][i]}")
                 axes[i][j+1].axis('off')
         else:
             for i in range(len(ims)):
@@ -228,7 +231,7 @@ class Experiment:
                 axes[i].set_title(f"it={i * self.val_size}")
                 axes[i].axis('off')
             axes[i+1].imshow((self.dst[self.used_indices[train_id][0]][0]))
-            axes[i+1].set_title(f"Ground truth. Image {self.used_indices[train_id][0]}")
+            axes[i + 1].set_title(f"Ground truth. Image {self.used_indices[train_id][0]}")
             axes[i+1].axis('off')
 
         fig.tight_layout()
@@ -247,7 +250,7 @@ class Experiment:
         return gt_data
 
     def format_label(self, index):
-        """Format label to tensor"""
+        """Format label to tensor."""
         gt_label = torch.Tensor([self.dst[index][1]]).long().to(self.device)
         gt_label = gt_label.view(1, )
         gt_onehot_label = label_to_onehot(gt_label)
