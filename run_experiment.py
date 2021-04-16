@@ -1,20 +1,23 @@
 import sys
-
+import glob
 import torch
 
 from src.argparser import read_json
 from src.experiment import Experiment
 
 
-if len(sys.argv) != 2:
-    raise Exception("Filename must be specified as argument.")
+###  MORTEN COMMENT OUT
+#if len(sys.argv) != 2:
+#    raise Exception("Filename must be specified as argument.")
 
 # Read parameters.
-name = sys.argv[1]
-params = read_json('params/'+name+'.json')
+# name = sys.argv[1]
+### 
 
-torch.manual_seed(1234)
-# Run experiment.
-exp = Experiment(params)
-exp.train()
-print(exp.losses)
+for filename in glob.glob("./params/*"):
+    params = read_json(filename)
+    torch.manual_seed(1234)
+    # Run experiment.
+    exp = Experiment(params)
+    exp.run_multiple()
+    exp.save_experiment()
