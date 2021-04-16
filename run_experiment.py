@@ -21,3 +21,4 @@ for filename in glob.glob("./params/*"):
     exp = Experiment(params)
     exp.run_multiple()
     exp.save_experiment()
+    exit()

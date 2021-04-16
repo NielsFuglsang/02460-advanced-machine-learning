@@ -1,5 +1,5 @@
 {
-    "num_epochs": 1000,
+    "num_epochs": 1001,
     "data": "CIFAR",
     "index": 1,
     "batch_size": 1,
