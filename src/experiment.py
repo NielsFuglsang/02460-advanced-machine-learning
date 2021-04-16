@@ -1,8 +1,9 @@
-
+from datetime import datetime
 import random
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import mean_squared_error as mse
@@ -17,9 +18,10 @@ from .utils import label_to_onehot, cross_entropy_for_onehot, euclidean_measure,
 class Experiment:
     """Class for running experiments of DLG algorithm given a set parameters (dictionary)."""
 
-    def __init__(self, params, rand_ims=False, verbose=True):
+    def __init__(self, params=None, rand_ims=False, verbose=True):
         torch.manual_seed(1234)
         # Identify device for computations.
+        self.rand_ims = rand_ims
         self.verbose = verbose
 
         self.device = "cpu"
@@ -28,36 +30,29 @@ class Experiment:
         print("Running on %s" % self.device)
 
         # Load input parameters.
-        self.num_epochs = params["num_epochs"]
-        self.batch_size = params["batch_size"]
-        self.measure = params["measure"]
-        self.data_name = params["data"]
-        self.img_index = params["index"]
-        self.init_type = params["init_type"]
-        self.Q = params["Q"]
-        self.val_size = params["val_size"]
-        self.n_repeats = params["n_repeats"]
+        self.params = params
+        if self.params:
+            self.init_with_params()
+    
+    def init_with_params(self):
+        self.set_params()
+        # Load dataset.
+        self.dst = self.load_dataset()
 
         # Initialize network.
         self.net = LeNet().to(self.device)
         self.net.apply(weights_init)
 
-        # Learning rate.
-        self.lr = params["lr"]
-
         # Transforms.
         self.tp = transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32), transforms.ToTensor()])
         self.tt = transforms.ToPILImage()
 
-        # Load dataset.
-        self.dst = self.load_dataset()
-
         # Specify indices.
-        self.random = rand_ims
+        self.random = self.rand_ims
         if self.random:
             self.indices = random.choices(list(range(len(self.dst))), k=self.batch_size)
         else:
-            self.indices = np.arange(params["index"], params["index"] + self.batch_size)
+            self.indices = np.arange(self.params["index"], self.params["index"] + self.batch_size)
 
         # Load ground truth data and find gradients.
         self.gt_data, self.gt_label, self.gt_onehot_label = self.load_ground_truths()
@@ -72,6 +67,20 @@ class Experiment:
         self.history = []
         self.used_indices = []
 
+    def set_params(self):
+        """Set all params if params provided on initialization."""
+        self.num_epochs = self.params["num_epochs"]
+        self.batch_size = self.params["batch_size"]
+        self.measure = self.params["measure"]
+        self.data_name = self.params["data"]
+        self.img_index = self.params["index"]
+        self.init_type = self.params["init_type"]
+        self.Q = self.params["Q"]
+        self.val_size = self.params["val_size"]
+        self.n_repeats = self.params["n_repeats"]
+        self.lr = self.params["lr"]
+        
+        
     def reset(self):
         """Reset network weights and ground truth data."""
 
@@ -256,3 +265,39 @@ class Experiment:
         gt_onehot_label = label_to_onehot(gt_label)
 
         return gt_onehot_label
+
+    
+    def save_experiment(self):
+        """Save the results of an experiment in a pickle file."""
+        results = {
+            "params": self.params,
+            "losses": self.losses,
+            "history": self.history,
+            "used_indices": self.used_indices
+        }
+        
+        now = datetime.now()
+        # _{now.strftime(''%Y%d%m_%H%M%S')}
+        filename = "./results/{}_{}_{}_{}_{}_{}".format(
+            self.params['data'],
+            self.params['init_type'],
+            self.params['measure'],
+            self.params['n_repeats'],
+            self.params['num_epochs'],
+            now.strftime('%y%d%m_%H%M%S'),
+        )
+            
+        with open(filename,'wb') as f:
+            pickle.dump(results, f)
+        
+    def load_experiment(self, pickle_file):
+        """Load a previous experiment. Can be used for later data processing and reconstruction plots."""
+        
+        with open(pickle_file, "rb") as f:
+            results = pickle.load(f)
+        
+        self.params = results["params"]
+        self.init_with_params()
+        self.losses = results["losses"]
+        self.history = results["history"]
+        self.used_indices = results["used_indices"]
