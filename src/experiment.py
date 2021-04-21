@@ -138,7 +138,7 @@ class Experiment:
             if iters % self.val_size == 0:
                 current_loss = closure()
                 if self.verbose:
-                    print(iters, "%.10f" % current_loss.item())
+                    print(iters, "%.10f" % current_loss.item(), flush=True)
                 train_history.append([self.tt(dummy_data[i].cpu()) for i in range(self.batch_size)])
 
                 dummy_im = dummy_data[0].cpu().detach().numpy().transpose((1, 2, 0))

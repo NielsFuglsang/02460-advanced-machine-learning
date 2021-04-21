@@ -14,8 +14,12 @@ from src.experiment import Experiment
 # name = sys.argv[1]
 ### 
 
+# Read all parameters into memory.
+all_params = []
 for filename in glob.glob("./params/*"):
-    params = read_json(filename)
+    all_params.append(read_json(filename))
+
+for params in all_params:
     torch.manual_seed(1234)
     # Run experiment.
     exp = Experiment(params)
