@@ -3,7 +3,7 @@
     "data": "CIFAR",
     "index": 1,
     "batch_size": 1,
-    "n_repeats": 30,
+    "n_repeats": 100,
     "init_type": "uniform",
     "measure": "euclidean",
     "Q": 1,
