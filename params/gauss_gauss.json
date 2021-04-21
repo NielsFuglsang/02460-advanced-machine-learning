@@ -1,6 +1,6 @@
 {
     "num_epochs": 101,
-    "data": "Omniglot",
+    "data": "MNIST",
     "index": 1,
     "batch_size": 1,
     "n_repeats": 100,
