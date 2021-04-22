@@ -4,10 +4,10 @@
     "index": 1,
     "batch_size": 1,
     "n_repeats": 100,
-    "init_type": "uniform",
+    "init_type": "gaussian_shift",
     "measure": "gaussian",
     "Q": 1,
     "val_size": 1,
     "lr": 0.1,
-    "nn": "LeNet"
+    "nn": "ResNet"
 }

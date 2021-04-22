@@ -1,6 +1,6 @@
 {
     "num_epochs": 101,
-    "data": "SVHN",
+    "data": "CIFAR",
     "index": 1,
     "batch_size": 1,
     "n_repeats": 100,
