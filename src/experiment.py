@@ -289,7 +289,7 @@ class Experiment:
             self.params['n_repeats'],
             self.params['num_epochs'],
             now.strftime('%y%d%m_%H%M%S'),
-            '_' + self.sigma if self.sigma else ""
+            '_' + str(self.sigma) if self.sigma else ""
         )
 
         with open(filename,'wb') as f:
