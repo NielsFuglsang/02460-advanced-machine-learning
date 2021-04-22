@@ -35,8 +35,8 @@ def gaussian_measure(sigma=10, Q=1):
             grad_diff += ((gx - gy)**2).sum()
 
         # Plotting the grads shows small variance around 0. Leads to exp(inf) and process fails
-        if sigma < 100:
-            sigma = 100
+        # if sigma < 100:
+        #     sigma = 100
 
         return Q * (1 - torch.exp(-grad_diff / sigma))
 

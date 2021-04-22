@@ -39,6 +39,10 @@ class Experiment:
         # Load dataset.
         self.dst = self.load_dataset()
 
+        # Initialize network.
+        self.net = LeNet().to(self.device)
+        self.net.apply(weights_init)
+
         # Transforms.
         self.tp = transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32), transforms.ToTensor()])
         self.tt = transforms.ToPILImage()
@@ -50,13 +54,8 @@ class Experiment:
         else:
             self.indices = np.arange(self.params["index"], self.params["index"] + self.batch_size)
 
-        # Load ground truth data.
+        # Load ground truth data and find gradients.
         self.gt_data, self.gt_label, self.gt_onehot_label = self.load_ground_truths()
-        self.inp_channels = self.gt_data.shape[1]
-
-        # Initialize network and compute gradients.
-        self.net = LeNet(self.inp_channels).to(self.device)
-        self.net.apply(weights_init)
         self.original_dy_dx = self.compute_original_grad()
 
         # Create loss measure (euclidean or gaussian).
@@ -80,7 +79,7 @@ class Experiment:
         self.val_size = self.params["val_size"]
         self.n_repeats = self.params["n_repeats"]
         self.lr = self.params["lr"]
-        
+        self.sigma = self.params.get("sigma")
         
     def reset(self):
         """Reset network weights and ground truth data."""
@@ -189,7 +188,11 @@ class Experiment:
             return euclidean_measure
         elif self.measure == "gaussian":
             all_grads = [torch.flatten(grad) for grad in self.original_dy_dx]
-            sigma = torch.var(torch.cat(all_grads), dim=0).item()
+            if self.sigma:
+                sigma = self.sigma
+            else:
+                sigma = torch.var(torch.cat(all_grads), dim=0).item()
+
             return gaussian_measure(sigma=sigma, Q=self.Q)
         else:
             raise ValueError(
@@ -250,7 +253,11 @@ class Experiment:
     def format_image(self, index):
         """Format image to tensor."""
         gt_data = self.tp(self.dst[index][0]).to(self.device)
-        
+
+        # Convert grayscale to rgb (for MNIST).
+        if gt_data.shape[0] == 1:
+            gt_data = gt_data.repeat(3, 1, 1)
+
         gt_data = gt_data.view(1, *gt_data.size())
 
         return gt_data
@@ -275,15 +282,16 @@ class Experiment:
         
         now = datetime.now()
         # _{now.strftime(''%Y%d%m_%H%M%S')}
-        filename = "./results/{}_{}_{}_{}_{}_{}".format(
+        filename = "./results/{}_{}_{}_{}_{}_{}{}".format(
             self.params['data'],
             self.params['init_type'],
             self.params['measure'],
             self.params['n_repeats'],
             self.params['num_epochs'],
             now.strftime('%y%d%m_%H%M%S'),
+            '_' + self.sigma if self.sigma else ""
         )
-            
+
         with open(filename,'wb') as f:
             pickle.dump(results, f)
         
