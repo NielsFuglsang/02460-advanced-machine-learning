@@ -25,7 +25,7 @@ for params in all_params:
         continue
     for sigma in [1, 10, 50, 100, 150, 200, 1000]:
         params['sigma'] = sigma
-        print(f"Running for init type '{params['init_type']}' and sigma = {sigma}.")
+        print(f"Running for init type '{params['init_type']}' and sigma = {sigma}.", flush=True)
         # Run experiment.
         exp = Experiment(params, verbose=False)
         exp.run_multiple()
