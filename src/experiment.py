@@ -85,8 +85,8 @@ class Experiment:
         self.val_size = self.params["val_size"]
         self.n_repeats = self.params["n_repeats"]
         self.lr = self.params["lr"]
-        self.sigma = self.params["sigma"]
-        
+        self.sigma = self.params.get("sigma")
+                
     def reset(self):
         """Reset network weights and ground truth data."""
 
