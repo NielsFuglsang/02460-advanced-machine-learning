@@ -14,11 +14,11 @@ def weights_init(m):
 
 
 class LeNet(nn.Module):
-    def __init__(self):
+    def __init__(self, inp_channels=3):
         super(LeNet, self).__init__()
         act = nn.Sigmoid
         self.body = nn.Sequential(
-            nn.Conv2d(3, 12, kernel_size=5, padding=5 // 2, stride=2),
+            nn.Conv2d(inp_channels, 12, kernel_size=5, padding=5 // 2, stride=2),
             act(),
             nn.Conv2d(12, 12, kernel_size=5, padding=5 // 2, stride=2),
             act(),
