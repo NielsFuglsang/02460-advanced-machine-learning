@@ -39,10 +39,6 @@ class Experiment:
         # Load dataset.
         self.dst = self.load_dataset()
 
-        # Initialize network.
-        self.net = LeNet().to(self.device)
-        self.net.apply(weights_init)
-
         # Transforms.
         self.tp = transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32), transforms.ToTensor()])
         self.tt = transforms.ToPILImage()
@@ -54,8 +50,13 @@ class Experiment:
         else:
             self.indices = np.arange(self.params["index"], self.params["index"] + self.batch_size)
 
-        # Load ground truth data and find gradients.
+        # Load ground truth data.
         self.gt_data, self.gt_label, self.gt_onehot_label = self.load_ground_truths()
+        self.inp_channels = self.gt_data.shape[1]
+
+        # Initialize network and compute gradients.
+        self.net = LeNet(self.inp_channels).to(self.device)
+        self.net.apply(weights_init)
         self.original_dy_dx = self.compute_original_grad()
 
         # Create loss measure (euclidean or gaussian).
@@ -249,11 +250,7 @@ class Experiment:
     def format_image(self, index):
         """Format image to tensor."""
         gt_data = self.tp(self.dst[index][0]).to(self.device)
-
-        # Convert grayscale to rgb (for MNIST).
-        if gt_data.shape[0] == 1:
-            gt_data = gt_data.repeat(3, 1, 1)
-
+        
         gt_data = gt_data.view(1, *gt_data.size())
 
         return gt_data
