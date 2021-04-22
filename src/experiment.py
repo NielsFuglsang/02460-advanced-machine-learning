@@ -50,7 +50,7 @@ class Experiment:
         else:
             self.indices = np.arange(self.params["index"], self.params["index"] + self.batch_size)
 
-        # Load ground truth data.
+        # Load ground truth data and find gradients.
         self.gt_data, self.gt_label, self.gt_onehot_label = self.load_ground_truths()
         self.inp_channels = self.gt_data.shape[1]
 
@@ -85,7 +85,7 @@ class Experiment:
         self.val_size = self.params["val_size"]
         self.n_repeats = self.params["n_repeats"]
         self.lr = self.params["lr"]
-        
+        self.sigma = self.params["sigma"]
         
     def reset(self):
         """Reset network weights and ground truth data."""
@@ -194,7 +194,11 @@ class Experiment:
             return euclidean_measure
         elif self.measure == "gaussian":
             all_grads = [torch.flatten(grad) for grad in self.original_dy_dx]
-            sigma = torch.var(torch.cat(all_grads), dim=0).item()
+            if self.sigma:
+                sigma = self.sigma
+            else:
+                sigma = torch.var(torch.cat(all_grads), dim=0).item()
+
             return gaussian_measure(sigma=sigma, Q=self.Q)
         else:
             raise ValueError(
@@ -280,15 +284,16 @@ class Experiment:
         
         now = datetime.now()
         # _{now.strftime(''%Y%d%m_%H%M%S')}
-        filename = "./results/{}_{}_{}_{}_{}_{}".format(
+        filename = "./results/{}_{}_{}_{}_{}_{}{}".format(
             self.params['data'],
             self.params['init_type'],
             self.params['measure'],
             self.params['n_repeats'],
             self.params['num_epochs'],
             now.strftime('%y%d%m_%H%M%S'),
+            '_' + str(self.sigma) if self.sigma else ""
         )
-            
+
         with open(filename,'wb') as f:
             pickle.dump(results, f)
         
