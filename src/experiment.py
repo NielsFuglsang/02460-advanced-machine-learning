@@ -11,7 +11,7 @@ import torch
 import torch.nn.functional as F
 from torchvision import models, datasets, transforms
 
-from .models import LeNet, weights_init
+from .models import LeNet, weights_init, ResNet18
 from .utils import label_to_onehot, cross_entropy_for_onehot, euclidean_measure, gaussian_measure
 
 
@@ -55,7 +55,12 @@ class Experiment:
         self.inp_channels = self.gt_data.shape[1]
 
         # Initialize network and compute gradients.
-        self.net = LeNet(self.inp_channels).to(self.device)
+        if self.params["nn"] == 'LeNet':
+            self.net = LeNet(self.inp_channels).to(self.device)
+        elif self.params["nn"] == 'ResNet':
+            self.net = ResNet18(self.inp_channels).to(self.device)
+        else:
+            print("Model must be given.")
         self.net.apply(weights_init)
         self.original_dy_dx = self.compute_original_grad()
 
@@ -250,7 +255,7 @@ class Experiment:
     def format_image(self, index):
         """Format image to tensor."""
         gt_data = self.tp(self.dst[index][0]).to(self.device)
-        
+
         gt_data = gt_data.view(1, *gt_data.size())
 
         return gt_data
