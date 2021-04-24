@@ -1,0 +1,14 @@
+{
+    "num_epochs": 101,
+    "data": "CIFAR",
+    "index": 1,
+    "batch_size": 1,
+    "n_repeats": 100,
+    "init_type": "uniform",
+    "measure": "gaussian",
+    "Q": 1,
+    "val_size": 1,
+    "lr": 0.1,
+    "nn": "LeNet",
+    "idlg": 1
+}
