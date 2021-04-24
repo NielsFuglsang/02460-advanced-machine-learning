@@ -16,7 +16,7 @@ from src.experiment import Experiment
 
 # Read all parameters into memory.
 all_params = []
-for filename in glob.glob("./params/*"):
+for filename in glob.glob("./params/resnet/*"):
     all_params.append(read_json(filename))
 
 for params in all_params:
