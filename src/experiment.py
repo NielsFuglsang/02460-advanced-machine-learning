@@ -86,6 +86,7 @@ class Experiment:
         self.n_repeats = self.params["n_repeats"]
         self.lr = self.params["lr"]
         self.sigma = self.params.get("sigma")
+        self.idlg = self.params.get("idlg")
                 
     def reset(self):
         """Reset network weights and ground truth data."""
@@ -224,6 +225,13 @@ class Experiment:
         else:
             raise ValueError(
                 "Only keywords 'uniform', 'gaussian' and 'gaussian_shift are accepted for 'init_type'.")
+
+        if self.idlg:
+            # Use iDLG initialization of dummy label.
+            dummy_label = torch.zeros(self.gt_onehot_label.size()).to(self.device).requires_grad_(True)
+            with torch.no_grad():
+                dummy_label[0, torch.argmax(self.original_dy_dx[-1] * self.original_dy_dx[-1])] = 1
+
         return dummy_data, dummy_label
 
     def make_reconstruction_plots(self, train_id=0, figsize=(12, 8)):
