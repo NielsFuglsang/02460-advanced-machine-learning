@@ -15,6 +15,23 @@ from .models import LeNet, weights_init, ResNet18
 from .utils import label_to_onehot, cross_entropy_for_onehot, euclidean_measure, gaussian_measure
 
 
+class MinMaxScalerVectorized(object):
+    """
+    If size is (batch_size, channels, n, m), then transforms each channel to the range [0, 1].
+    If size is (batch_size, n), then transform each bacth to the range [0, 1].
+    """
+    def __call__(self, tensor):
+        if len(tensor.shape) == 4:
+            dim = (2,3)
+        else:
+            dim = (1)
+        dist = (tensor.amax(dim=dim, keepdim=True) - tensor.amin(dim=dim, keepdim=True))
+        dist[dist==0.] = 1. # Avoid dividing by zero.
+        scale = 1.0 /  dist
+        tensor = tensor * scale
+        tensor = tensor - tensor.amin(dim=dim, keepdim=True)
+        return tensor
+
 class Experiment:
     """Class for running experiments of DLG algorithm given a set parameters (dictionary)."""
 
@@ -222,6 +239,12 @@ class Experiment:
                 self.device).requires_grad_(True)
             dummy_label = torch.normal(mean=0.5, std=0.5, size=self.gt_onehot_label.size()).to(
                 self.device).requires_grad_(True)
+        elif self.init_type == "gaussian_shift2":
+            dummy_data = torch.randn(self.gt_data.size())
+            dummy_label = torch.randn(self.gt_onehot_label.size())
+            scaler = MinMaxScalerVectorized()
+            dummy_data = scaler(dummy_data).to(self.device).requires_grad_(True)
+            dummy_label = scaler(dummy_label).to(self.device).requires_grad_(True)
         else:
             raise ValueError(
                 "Only keywords 'uniform', 'gaussian' and 'gaussian_shift are accepted for 'init_type'.")
