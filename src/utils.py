@@ -27,17 +27,18 @@ def euclidean_measure(original_dy_dx, dummy_dy_dx):
     return grad_diff
 
 
-def gaussian_measure(sigma=10, Q=1):
+def gaussian_measure(sigmas=10, Q=1):
     """Calculate gaussian kernel distance measure between gradients."""
-    def gauss(original_dy_dx, dummy_dy_dx, sigma=sigma, Q=Q):
+    
+    def gauss(original_dy_dx, dummy_dy_dx, sigmas=sigmas, Q=Q):
         grad_diff = 0
-        for gx, gy in zip(dummy_dy_dx, original_dy_dx):
-            grad_diff += ((gx - gy)**2).sum()
+        for i, (gx, gy) in enumerate(zip(dummy_dy_dx, original_dy_dx)):
+            euclid = ((gx - gy)**2).sum() / torch.numel(gx)
+            exponential = torch.exp(-euclid / (2*sigmas[i]))
 
-        # Plotting the grads shows small variance around 0. Leads to exp(inf) and process fails
-        # if sigma < 100:
-        #     sigma = 100
+            grad_diff += Q[i] * (1 - exponential)
 
-        return Q * (1 - torch.exp(-grad_diff / sigma))
+        return grad_diff
+        # return Q * (1 - torch.exp(-grad_diff / sigma))
 
     return gauss

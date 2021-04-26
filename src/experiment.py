@@ -137,7 +137,7 @@ class Experiment:
         """Train our network based on the DLG algorithm."""
 
         dummy_data, dummy_label = self.init_data()
-        optimizer = torch.optim.LBFGS([dummy_data, dummy_label], lr=self.lr)
+        optimizer = torch.optim.AdamW([dummy_data, dummy_label], lr=self.lr)#, tolerance_grad=0, tolerance_change=0)
 
         gt_im = self.gt_data[0].cpu().numpy().transpose((1, 2, 0))
 
@@ -212,12 +212,18 @@ class Experiment:
             return euclidean_measure
         elif self.measure == "gaussian":
             all_grads = [torch.flatten(grad) for grad in self.original_dy_dx]
+            for grad in self.original_dy_dx:
+                print(grad.shape)
             if self.sigma:
                 sigma = self.sigma
             else:
-                sigma = torch.var(torch.cat(all_grads), dim=0).item()
+                sigmas = [torch.var(grad) for grad in self.original_dy_dx]
+                self.Q = [1/(i+1) for i in range(len(self.original_dy_dx))]
+                # sigma = torch.var(torch.cat(all_grads), dim=0).item()
+                print(sigmas)
+                print(self.Q)
 
-            return gaussian_measure(sigma=sigma, Q=self.Q)
+            return gaussian_measure(sigmas=sigmas, Q=self.Q)
         else:
             raise ValueError(
                 "Only keywords 'euclidean' and 'gaussian' are accepted for 'measure'.")
