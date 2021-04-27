@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torchvision import models, datasets, transforms
 
 from .models import LeNet, weights_init, ResNet18
-from .utils import label_to_onehot, cross_entropy_for_onehot, euclidean_measure, gaussian_measure
+from .utils import label_to_onehot, cross_entropy_for_onehot, euclidean_measure, gaussian_measure, gaussian_measure_adaptive
 
 
 class MinMaxScalerVectorized(object):
@@ -42,8 +42,8 @@ class Experiment:
         self.verbose = verbose
 
         self.device = "cpu"
-        #if torch.cuda.is_available():
-        #    self.device = "cuda"
+        if torch.cuda.is_available():
+            self.device = "cuda"
         print("Running on %s" % self.device)
 
         # Load input parameters.
@@ -127,8 +127,10 @@ class Experiment:
 
     def run_multiple(self):
         """Run training on multiple images to get an estimate of performance."""
+        print("Image", 0)
         self.train()
-        for _ in range(self.n_repeats - 1):
+        for i in range(self.n_repeats - 1):
+            print("Image", i)
             # Reset and run training again.
             self.reset()
             self.train()
