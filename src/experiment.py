@@ -1,9 +1,9 @@
 from datetime import datetime
+import pickle
 import random
 
-import numpy as np
 import matplotlib.pyplot as plt
-import pickle
+import numpy as np
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import mean_squared_error as mse
@@ -42,8 +42,8 @@ class Experiment:
         self.verbose = verbose
 
         self.device = "cpu"
-        if torch.cuda.is_available():
-            self.device = "cuda"
+        #if torch.cuda.is_available():
+        #    self.device = "cuda"
         print("Running on %s" % self.device)
 
         # Load input parameters.

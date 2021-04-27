@@ -1,7 +1,9 @@
+
+import itertools
+
+import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
-import itertools
-import matplotlib.pyplot as plt
 
 
 def label_to_onehot(target, num_classes=100):
