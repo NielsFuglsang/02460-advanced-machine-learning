@@ -1,7 +1,9 @@
+
+import itertools
+
+import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
-import itertools
-import matplotlib.pyplot as plt
 
 
 def label_to_onehot(target, num_classes=100):
@@ -39,5 +41,21 @@ def gaussian_measure(sigma=10, Q=1):
         #     sigma = 100
 
         return Q * (1 - torch.exp(-grad_diff / sigma))
+
+    return gauss
+
+def gaussian_measure_adaptive(sigmas, Qs):
+    """Calculate gaussian kernel distance measure between gradients."""
+    
+    def gauss(original_dy_dx, dummy_dy_dx, sigmas=sigmas, Qs=Qs):
+        grad_diff = 0
+        for i, (gx, gy) in enumerate(zip(dummy_dy_dx, original_dy_dx)):
+            euclid = ((gx - gy)**2).sum() / torch.numel(gx)
+            exponential = torch.exp(-euclid / (2*sigmas[i]))
+
+            grad_diff += Qs[i] * (1 - exponential)
+
+        return grad_diff
+        # return Q * (1 - torch.exp(-grad_diff / sigma))
 
     return gauss

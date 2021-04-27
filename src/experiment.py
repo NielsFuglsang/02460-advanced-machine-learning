@@ -1,9 +1,9 @@
 from datetime import datetime
+import pickle
 import random
 
-import numpy as np
 import matplotlib.pyplot as plt
-import pickle
+import numpy as np
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import mean_squared_error as mse
@@ -15,6 +15,23 @@ from .models import LeNet, weights_init, ResNet18
 from .utils import label_to_onehot, cross_entropy_for_onehot, euclidean_measure, gaussian_measure
 
 
+class MinMaxScalerVectorized(object):
+    """
+    If size is (batch_size, channels, n, m), then transforms each channel to the range [0, 1].
+    If size is (batch_size, n), then transform each bacth to the range [0, 1].
+    """
+    def __call__(self, tensor):
+        if len(tensor.shape) == 4:
+            dim = (2,3)
+        else:
+            dim = (1)
+        dist = (tensor.amax(dim=dim, keepdim=True) - tensor.amin(dim=dim, keepdim=True))
+        dist[dist==0.] = 1. # Avoid dividing by zero.
+        scale = 1.0 /  dist
+        tensor = tensor * scale
+        tensor = tensor - tensor.amin(dim=dim, keepdim=True)
+        return tensor
+
 class Experiment:
     """Class for running experiments of DLG algorithm given a set parameters (dictionary)."""
 
@@ -25,8 +42,8 @@ class Experiment:
         self.verbose = verbose
 
         self.device = "cpu"
-        if torch.cuda.is_available():
-            self.device = "cuda"
+        #if torch.cuda.is_available():
+        #    self.device = "cuda"
         print("Running on %s" % self.device)
 
         # Load input parameters.
@@ -201,9 +218,15 @@ class Experiment:
                 sigma = torch.var(torch.cat(all_grads), dim=0).item()
 
             return gaussian_measure(sigma=sigma, Q=self.Q)
+        elif self.measure == "gaussian_adaptive":
+            # Calculate sigmas per layer.
+            sigmas = [torch.var(grad) for grad in self.original_dy_dx]
+            # Put more weight on layers close to the input.
+            Qs = [1/(i+1) for i in range(len(self.original_dy_dx))]
+            return gaussian_measure_adaptive(sigmas=sigmas, Qs=Qs)
         else:
             raise ValueError(
-                "Only keywords 'euclidean' and 'gaussian' are accepted for 'measure'.")
+                "Only keywords 'euclidean', 'gaussian', and 'gaussian_adaptive' are accepted for 'measure'.")
 
     def init_data(self):
         """Initialize dummy data and label based on parameters."""
@@ -222,6 +245,12 @@ class Experiment:
                 self.device).requires_grad_(True)
             dummy_label = torch.normal(mean=0.5, std=0.5, size=self.gt_onehot_label.size()).to(
                 self.device).requires_grad_(True)
+        elif self.init_type == "gaussian_shift2":
+            dummy_data = torch.randn(self.gt_data.size())
+            dummy_label = torch.randn(self.gt_onehot_label.size())
+            scaler = MinMaxScalerVectorized()
+            dummy_data = scaler(dummy_data).to(self.device).requires_grad_(True)
+            dummy_label = scaler(dummy_label).to(self.device).requires_grad_(True)
         else:
             raise ValueError(
                 "Only keywords 'uniform', 'gaussian' and 'gaussian_shift are accepted for 'init_type'.")
