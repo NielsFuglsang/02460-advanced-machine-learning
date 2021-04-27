@@ -7,7 +7,6 @@
 #BSUB -o logs/dlg_%J.out
 #BSUB -e logs/dlg_%J.err
 
-module load cuda/11.1
 source .venv/bin/activate
 
 which python3
