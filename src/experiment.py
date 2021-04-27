@@ -218,9 +218,15 @@ class Experiment:
                 sigma = torch.var(torch.cat(all_grads), dim=0).item()
 
             return gaussian_measure(sigma=sigma, Q=self.Q)
+        elif self.measure == "gaussian_adaptive":
+            # Calculate sigmas per layer.
+            sigmas = [torch.var(grad) for grad in self.original_dy_dx]
+            # Put more weight on layers close to the input.
+            Qs = [1/(i+1) for i in range(len(self.original_dy_dx))]
+            return gaussian_measure_adaptive(sigmas=sigmas, Qs=Qs)
         else:
             raise ValueError(
-                "Only keywords 'euclidean' and 'gaussian' are accepted for 'measure'.")
+                "Only keywords 'euclidean', 'gaussian', and 'gaussian_adaptive' are accepted for 'measure'.")
 
     def init_data(self):
         """Initialize dummy data and label based on parameters."""
