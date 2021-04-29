@@ -78,6 +78,12 @@ class Experiment:
             self.net = ResNet18(self.inp_channels).to(self.device)
         else:
             print("Model must be given.")
+
+        if self.params["optimizer"] == 'AdamW':
+            self.optimizer = torch.optim.AdamW
+        else:
+            self.optimizer = torch.optim.LBFGS
+
         self.net.apply(weights_init)
         self.original_dy_dx = self.compute_original_grad()
 
@@ -139,7 +145,7 @@ class Experiment:
         """Train our network based on the DLG algorithm."""
 
         dummy_data, dummy_label = self.init_data()
-        optimizer = torch.optim.LBFGS([dummy_data, dummy_label], lr=self.lr)
+        optimizer = self.optimizer([dummy_data, dummy_label], lr=self.lr)
 
         gt_im = self.gt_data[0].cpu().numpy().transpose((1, 2, 0))
 
