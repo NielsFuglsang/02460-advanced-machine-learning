@@ -271,7 +271,7 @@ class Experiment:
 
         return dummy_data, dummy_label
 
-    def make_reconstruction_plots(self, train_id=0, figsize=(12, 8)):
+    def make_reconstruction_plots(self, filename=None, train_id=0, figsize=(12, 8)):
         """Make reconstruction plots from what was stored in history."""
         ims = self.history[train_id]
 
@@ -292,14 +292,17 @@ class Experiment:
         else:
             for i in range(len(ims)):
                 axes[i].imshow(ims[i][0])
-                axes[i].set_title(f"it={i * self.val_size}")
+                # axes[i].set_title(f"it={i * self.val_size}")
                 axes[i].axis('off')
             axes[i+1].imshow((self.dst[self.used_indices[train_id][0]][0]))
-            axes[i + 1].set_title(f"Ground truth. Image {self.used_indices[train_id][0]}")
+            # axes[i + 1].set_title(f"True img {self.used_indices[train_id][0]}")
             axes[i+1].axis('off')
-
-        fig.tight_layout()
-        plt.show()
+        
+        if filename:
+            plt.savefig(filename, bbox_inches='tight')
+        else:
+            fig.tight_layout()
+            plt.show()
 
     def format_image(self, index):
         """Format image to tensor."""
