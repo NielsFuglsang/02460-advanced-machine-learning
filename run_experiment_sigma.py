@@ -16,14 +16,14 @@ from src.experiment import Experiment
 
 # Read all parameters into memory.
 all_params = []
-for filename in glob.glob("./params/sigma/*"):
+for filename in ["./params/sigma/tg_gauss.json"]:
     all_params.append(read_json(filename))
 
 for params in all_params:
     torch.manual_seed(1234)
     if params['measure'] != 'gaussian':
         continue
-    for sigma in [1, 10, 50, 100, 150, 200, 1000]:
+    for sigma in [500, 800, 1000, 1500, 2000]:
         params['sigma'] = sigma
         print(f"Running for init type '{params['init_type']}' and sigma = {sigma}.", flush=True)
         # Run experiment.
