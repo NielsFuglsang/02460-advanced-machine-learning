@@ -16,7 +16,7 @@ from src.experiment import Experiment
 
 # Read all parameters into memory.
 all_params = []
-for filename in ["./params/sigma/tg_gauss.json"]:
+for filename in glob.glob("./params/sigma/*"):
     all_params.append(read_json(filename))
 
 for params in all_params:

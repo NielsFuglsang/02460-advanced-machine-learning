@@ -133,10 +133,8 @@ class Experiment:
 
     def run_multiple(self):
         """Run training on multiple images to get an estimate of performance."""
-        print("Image", 0)
         self.train()
         for i in range(self.n_repeats - 1):
-            print("Image", i)
             # Reset and run training again.
             self.reset()
             self.train()

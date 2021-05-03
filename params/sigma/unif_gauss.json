@@ -9,5 +9,6 @@
     "Q": 1,
     "val_size": 1,
     "lr": 0.1,
-    "nn": "LeNet"
+    "nn": "LeNet",
+    "optimizer": "LBFGS"
 }
