@@ -4,7 +4,7 @@
     "index": 1,
     "batch_size": 1,
     "n_repeats": 100,
-    "init_type": "gaussian",
+    "init_type": "gaussian_shift2",
     "measure": "gaussian",
     "Q": 1,
     "val_size": 1,
