@@ -32,10 +32,12 @@ class MinMaxScalerVectorized(object):
         tensor = tensor - tensor.amin(dim=dim, keepdim=True)
         return tensor
 
+
 class Experiment:
     """Class for running experiments of DLG algorithm given a set parameters (dictionary)."""
 
     def __init__(self, params=None, rand_ims=False, verbose=True):
+        """Initialze class and run init_with_params() to get variables from parameters dict."""
         torch.manual_seed(1234)
         # Identify device for computations.
         self.rand_ims = rand_ims
@@ -52,6 +54,7 @@ class Experiment:
             self.init_with_params()
     
     def init_with_params(self):
+        """Initialize class variables from parameter dictionary."""
         self.set_params()
         # Load dataset.
         self.dst = self.load_dataset()
@@ -317,7 +320,6 @@ class Experiment:
         gt_onehot_label = label_to_onehot(gt_label)
 
         return gt_onehot_label
-
     
     def save_experiment(self):
         """Save the results of an experiment in a pickle file."""

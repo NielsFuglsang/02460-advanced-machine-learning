@@ -7,6 +7,7 @@ from torchvision import models, datasets, transforms
 
 
 def weights_init(m):
+    """Initialize weights of Pytorch nn.Module architecture."""
     if hasattr(m, "weight"):
         m.weight.data.uniform_(-0.5, 0.5)
     if hasattr(m, "bias"):
@@ -17,6 +18,7 @@ def weights_init(m):
 
 
 class LeNet(nn.Module):
+    """LeNet Neural Network architecture."""
     def __init__(self, inp_channels=3):
         super(LeNet, self).__init__()
         act = nn.Sigmoid
@@ -37,14 +39,12 @@ class LeNet(nn.Module):
         return out
 
 
-'''ResNet in PyTorch.
-
-For Pre-activation ResNet, see 'preact_resnet.py'.
+"""ResNet in PyTorch.
 
 Reference:
 [1] Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun
     Deep Residual Learning for Image Recognition. arXiv:1512.03385
-'''
+"""
 
 class BasicBlock(nn.Module):
     expansion = 1
