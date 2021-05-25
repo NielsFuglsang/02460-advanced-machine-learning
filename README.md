@@ -1,11 +1,10 @@
 # 02460-advanced-machine-learning
-Project about privacy in Machine Learning for the course 02460 Advanced Machine Learning Spring 2021.
+Project about privacy in Machine Learning for the course 02460 Advanced Machine Learning Spring 2021 at Technical University of Denmark.
+
+We explore the robustness and techniques of deep leakage from gradients (DLG) [[1]](#1). We investigate the influence of different initalization methods and distance measures by comparing the convergence rate and speed of single image reconstructions. Specifically, we compare the results with SAPAG [[2]](#2).
 
 ### Algorithm
-![alt text](https://github.com/NielsFuglsang/02460-advanced-machine-learning/blob/main/assets/DLGillustration.PNG?raw=true)
-
-Here we explore the robustness and techniques of deep leakage from gradients (DLG) [[1]](#1). We compare influence of initalization methods and distance measures to explore the convergence rate and speed of single input images. More specifically we hold up the results with what was presented in SAPAG [[2]](#2).
-
+![DLG illustration](https://github.com/NielsFuglsang/02460-advanced-machine-learning/blob/main/assets/DLGillustration.PNG?raw=true)
 
 ### References
 <a id="1">[1]</a> 
