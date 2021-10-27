@@ -11,6 +11,8 @@ import torch
 import torch.nn.functional as F
 from torchvision import models, datasets, transforms
 
+from .data_loader import CTData
+
 from .models import LeNet, weights_init, ResNet18
 from .utils import label_to_onehot, cross_entropy_for_onehot, euclidean_measure, gaussian_measure, gaussian_measure_adaptive
 
@@ -212,7 +214,10 @@ class Experiment:
             "Omniglot": datasets.Omniglot,
             "SVHN": datasets.SVHN,
         }
-        return dsts[self.data_name]("~/.torch", download=True)
+        if self.data_name == "CT":
+            return CTData()
+        else:
+            return dsts[self.data_name]("~/.torch", download=True)
 
     def create_loss_measure(self):
         """Create loss measure, either euclidean distance or gaussian kernel."""

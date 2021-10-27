@@ -1,0 +1,14 @@
+{
+    "num_epochs": 4,
+    "data": "CT",
+    "index": 1,
+    "batch_size": 1,
+    "n_repeats": 3,
+    "init_type": "gaussian_shift2",
+    "measure": "euclidean",
+    "Q": 1,
+    "val_size": 2,
+    "lr": 0.1,
+    "nn": "LeNet",
+    "optimizer": "LBFGS"
+}
