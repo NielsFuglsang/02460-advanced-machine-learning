@@ -5,12 +5,13 @@ import torch
 from torch.utils.data import Dataset
 from torchvision.io import read_image
 from torchvision.io.image import ImageReadMode
+from torchvision import transforms
 
 
 class CTData(Dataset):
     """CT dataset."""
 
-    def __init__(self, root_dir='data/*.png'):
+    def __init__(self, root_dir='../data/*.png'):
         """
         Args:
             root_dir: obvious....
@@ -23,8 +24,7 @@ class CTData(Dataset):
 
     def __getitem__(self, idx):
         image_path = self.image_paths[idx]
-        print(image_path)
 
         image = Image.open(image_path)
         
-        return image, 10
+        return image.convert('RGB'), 10
