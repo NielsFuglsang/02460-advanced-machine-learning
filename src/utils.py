@@ -51,7 +51,7 @@ def gaussian_measure_adaptive(sigmas, Qs):
         grad_diff = 0
         for i, (gx, gy) in enumerate(zip(dummy_dy_dx, original_dy_dx)):
             euclid = ((gx - gy)**2).sum() / torch.numel(gx)
-            exponential = torch.exp(-euclid / (2*sigmas[i]))
+            exponential = torch.exp(-euclid / sigmas[i])
 
             grad_diff += Qs[i] * (1 - exponential)
 
