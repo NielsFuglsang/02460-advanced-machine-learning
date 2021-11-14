@@ -136,3 +136,6 @@ dmypy.json
 
 # HPC logs
 /logs
+
+# Large data folders
+/data/chest_xrays
