@@ -11,7 +11,7 @@ import torch
 import torch.nn.functional as F
 from torchvision import models, datasets, transforms
 
-from .data_loader import CTData
+from .data_loader import ChestXRay
 
 from .models import LeNet, weights_init, ResNet18
 from .utils import label_to_onehot, cross_entropy_for_onehot, euclidean_measure, gaussian_measure, gaussian_measure_adaptive
@@ -214,8 +214,8 @@ class Experiment:
             "Omniglot": datasets.Omniglot,
             "SVHN": datasets.SVHN,
         }
-        if self.data_name == "CT":
-            return CTData()
+        if self.data_name == "Medical":
+            return ChestXRay()
         else:
             return dsts[self.data_name]("~/.torch", download=True)
 
@@ -291,7 +291,7 @@ class Experiment:
                     axes[i][j].axis('off')
 
             for i in range(self.batch_size):
-                axes[i][j + 1].imshow((self.dst[self.used_indices[train_id][i]][0]))
+                axes[i][j + 1].imshow(self.tt(self.format_image(self.used_indices[train_id][i])[0]))
                 axes[i][j + 1].set_title(f"Ground truth. Image {self.used_indices[train_id][i]}")
                 axes[i][j+1].axis('off')
         else:
@@ -299,7 +299,7 @@ class Experiment:
                 axes[i].imshow(ims[i][0])
                 axes[i].set_title(f"it={i * self.val_size}")
                 axes[i].axis('off')
-            axes[i+1].imshow((self.dst[self.used_indices[train_id][0]][0]))
+            axes[i+1].imshow(self.tt(self.format_image(self.used_indices[train_id][0])[0]))
             axes[i + 1].set_title(f"Ground truth. Image {self.used_indices[train_id][0]}")
             axes[i+1].axis('off')
 

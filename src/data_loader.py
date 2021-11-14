@@ -8,13 +8,13 @@ from torchvision.io.image import ImageReadMode
 from torchvision import transforms
 
 
-class CTData(Dataset):
-    """CT dataset."""
+class ChestXRay(Dataset):
+    """Chest XRay dataset from https://nihcc.app.box.com/v/ChestXray-NIHCC."""
 
-    def __init__(self, root_dir='../data/*.png'):
+    def __init__(self, root_dir='../data/chest_xrays/*.png'):
         """
         Args:
-            root_dir: obvious....
+            root_dir: Glob pattern match on the relevant images.
         """
         self.root_dir = root_dir
         self.image_paths = sorted([name for name in glob(self.root_dir)])
@@ -27,4 +27,5 @@ class CTData(Dataset):
 
         image = Image.open(image_path)
         
-        return image.convert('RGB'), 10
+        # Return image and dummy label.
+        return image.convert('RGB'), 1
